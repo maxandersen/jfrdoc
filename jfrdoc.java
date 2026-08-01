@@ -31,6 +31,8 @@ public class jfrdoc implements Command<CommandInvocation> {
         @Override
         public Map<String, List<HelpEntry>> getAdditionalSections() {
             List<HelpEntry> examples = List.of(
+                new HelpEntry("jbang app install jfrdoc@maxandersen",
+                    "Install as a command (then use jfrdoc directly)"),
                 new HelpEntry("jfrdoc -f html",
                     "Generate HTML docs for all JDK events"),
                 new HelpEntry("jfrdoc -f text -o -",
