@@ -1,6 +1,7 @@
 ///usr/bin/env jbang "$0" "$@" ; exit $?
 //JAVA 15+
 //DEPS org.aesh:aesh:3.16
+//DEPS io.smallrye:jandex:3.2.4
 //FILES jfr-since.properties
 
 import jdk.jfr.*;
@@ -12,6 +13,10 @@ import java.util.regex.Pattern;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import org.jboss.jandex.*;
+import java.util.jar.JarFile;
+import java.util.jar.JarEntry;
 
 import org.aesh.command.Command;
 import org.aesh.command.CommandDefinition;
@@ -815,39 +820,58 @@ public class jfrdoc implements Command<CommandInvocation> {
 
     @SuppressWarnings("unchecked")
     static void registerClasspathEvents() {
+        Indexer indexer = new Indexer();
+        // Track which classes came from which classpath entry
+        Map<String, String> classToSource = new HashMap<>();
+
+        // Index jdk.jfr.Event from the JDK runtime so getAllKnownSubclasses works
+        try (FileSystem jrt = FileSystems.newFileSystem(URI.create("jrt:/"), Map.of())) {
+            Path eventClass = jrt.getPath("/modules/jdk.jfr/jdk/jfr/Event.class");
+            if (Files.exists(eventClass)) {
+                try (var is = Files.newInputStream(eventClass)) { indexer.index(is); } catch (Exception ignored) {}
+            }
+        } catch (Exception ignored) {}
+
+        // Index classpath entries, tracking which entry each class file came from
         String cp = System.getProperty("java.class.path", "");
         for (String entry : cp.split(System.getProperty("path.separator"))) {
             Path p = Path.of(entry);
             if (!Files.exists(p)) continue;
             try {
                 if (entry.endsWith(".jar")) {
-                    try (FileSystem fs = FileSystems.newFileSystem(p)) {
-                        scanPath(fs.getPath("/"), entry);
+                    try (JarFile jar = new JarFile(p.toFile())) {
+                        jar.stream().filter(e -> e.getName().endsWith(".class") && !e.getName().contains("module-info"))
+                            .forEach(e -> {
+                                String className = e.getName().replace('/', '.').replaceAll("\\.class$", "");
+                                classToSource.put(className, entry);
+                                try (var is = jar.getInputStream(e)) { indexer.index(is); } catch (Exception ignored) {}
+                            });
                     }
                 } else if (Files.isDirectory(p)) {
-                    scanPath(p, entry);
-                }
-            } catch (Exception e) { /* skip */ }
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    static void scanPath(Path root, String source) throws IOException {
-        Files.walk(root)
-            .filter(f -> f.toString().endsWith(".class") && !f.toString().contains("module-info"))
-            .forEach(f -> {
-                try {
-                    String rel = root.relativize(f).toString();
-                    String className = rel.replace('/', '.').replace('\\', '.').replaceAll("\\.class$", "");
-                    Class<?> cls = Class.forName(className, false, jfrdoc.class.getClassLoader());
-                    if (Event.class.isAssignableFrom(cls) && cls != Event.class) {
-                        FlightRecorder.register((Class<? extends Event>) cls);
-                        Name nameAnn = cls.getAnnotation(Name.class);
-                        String eventName = nameAnn != null ? nameAnn.value() : className;
-                        eventSources.put(eventName, source);
+                    try (var walk = Files.walk(p)) {
+                        walk.filter(f -> f.toString().endsWith(".class") && !f.toString().contains("module-info"))
+                            .forEach(f -> {
+                                String className = p.relativize(f).toString().replace('/', '.').replace('\\', '.').replaceAll("\\.class$", "");
+                                classToSource.put(className, entry);
+                                try (var is = Files.newInputStream(f)) { indexer.index(is); } catch (Exception ignored) {}
+                            });
                     }
-                } catch (Throwable t) { /* skip — linkage errors, missing deps, etc */ }
-            });
+                }
+            } catch (Exception ignored) {}
+        }
+
+        Index index = indexer.complete();
+        for (ClassInfo ci : index.getAllKnownSubclasses(DotName.createSimple("jdk.jfr.Event"))) {
+            String source = classToSource.get(ci.name().toString());
+            if (source == null) continue; // skip JDK-internal events
+            try {
+                Class<?> cls = Class.forName(ci.name().toString(), false, jfrdoc.class.getClassLoader());
+                FlightRecorder.register((Class<? extends Event>) cls);
+                Name nameAnn = cls.getAnnotation(Name.class);
+                String eventName = nameAnn != null ? nameAnn.value() : ci.name().toString();
+                eventSources.put(eventName, source);
+            } catch (Throwable t) { /* skip — linkage errors, missing deps */ }
+        }
     }
 
     /** Try to extract Maven coordinates from path, fall back to jar filename */
