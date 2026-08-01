@@ -23,7 +23,7 @@ import org.aesh.command.option.Option;
 import org.aesh.command.option.OptionList;
 import org.aesh.AeshRuntimeRunner;
 
-@CommandDefinition(name = "jfr-doc", description = "Generate JFR event documentation",
+@CommandDefinition(name = "jfrdoc", description = "Generate JFR event documentation",
         generateHelp = true, helpSectionProvider = jfrdoc.Examples.class)
 public class jfrdoc implements Command<CommandInvocation> {
 
@@ -31,23 +31,23 @@ public class jfrdoc implements Command<CommandInvocation> {
         @Override
         public Map<String, List<HelpEntry>> getAdditionalSections() {
             List<HelpEntry> examples = List.of(
-                new HelpEntry("jfr-doc",
+                new HelpEntry("jfrdoc -f html",
                     "Generate HTML docs for all JDK events"),
-                new HelpEntry("jfr-doc -f text -o -",
+                new HelpEntry("jfrdoc -f text -o -",
                     "Print all events as plain text to stdout"),
-                new HelpEntry("jfr-doc --name GarbageCollection",
+                new HelpEntry("jfrdoc --name GarbageCollection",
                     "Filter events by name (regex)"),
-                new HelpEntry("jfr-doc --category GC -o gc-events.txt",
+                new HelpEntry("jfrdoc --category GC -o gc-events.txt",
                     "GC events as text (format inferred from extension)"),
-                new HelpEntry("jfr-doc --no-jdk",
+                new HelpEntry("jfrdoc --no-jdk",
                     "Only show non-JDK events from classpath JARs"),
-                new HelpEntry("jbang -cp lib.jar jfr-doc",
+                new HelpEntry("jbang -cp lib.jar jfrdoc",
                     "Include classpath JARs that define custom JFR events"),
-                new HelpEntry("jbang --deps dev.tamboui:tamboui-core:0.3.0 jfr-doc --no-jdk",
+                new HelpEntry("jbang --deps dev.tamboui:tamboui-core:0.3.0 jfrdoc --no-jdk",
                     "Document JFR events from a Maven dependency"),
-                new HelpEntry("jfr-doc --generate-since 11,17,21,24,25",
+                new HelpEntry("jfrdoc --generate-since 11,17,21,24,25",
                     "Regenerate version history by scanning JDKs via jbang"),
-                new HelpEntry("jfr-doc --generate-since 11-25",
+                new HelpEntry("jfrdoc --generate-since 11-25",
                     "Same but with version range expansion")
             );
             return Map.of("Examples", examples);
@@ -886,8 +886,7 @@ public class jfrdoc implements Command<CommandInvocation> {
     }
 
     public static void main(String[] args) {
-        // ponytail: aesh shows help on empty args, pass dummy to force execution
-        if (args.length == 0) args = new String[]{"--jdk"};
+        if (args.length == 0) args = new String[]{"--help"};
         AeshRuntimeRunner.builder().command(jfrdoc.class).args(args).execute();
     }
 }
