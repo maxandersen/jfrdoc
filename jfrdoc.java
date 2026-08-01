@@ -16,13 +16,43 @@ import java.util.stream.Collectors;
 import org.aesh.command.Command;
 import org.aesh.command.CommandDefinition;
 import org.aesh.command.CommandResult;
+import org.aesh.command.HelpEntry;
+import org.aesh.command.HelpSectionProvider;
 import org.aesh.command.invocation.CommandInvocation;
 import org.aesh.command.option.Option;
 import org.aesh.command.option.OptionList;
 import org.aesh.AeshRuntimeRunner;
 
-@CommandDefinition(name = "jfr-doc", description = "Generate JFR event documentation", generateHelp = true)
+@CommandDefinition(name = "jfr-doc", description = "Generate JFR event documentation",
+        generateHelp = true, helpSectionProvider = jfrdoc.Examples.class)
 public class jfrdoc implements Command<CommandInvocation> {
+
+    public static class Examples implements HelpSectionProvider {
+        @Override
+        public Map<String, List<HelpEntry>> getAdditionalSections() {
+            List<HelpEntry> examples = List.of(
+                new HelpEntry("jfr-doc",
+                    "Generate HTML docs for all JDK events"),
+                new HelpEntry("jfr-doc -f text -o -",
+                    "Print all events as plain text to stdout"),
+                new HelpEntry("jfr-doc --name GarbageCollection",
+                    "Filter events by name (regex)"),
+                new HelpEntry("jfr-doc --category GC -o gc-events.txt",
+                    "GC events as text (format inferred from extension)"),
+                new HelpEntry("jfr-doc --no-jdk",
+                    "Only show non-JDK events from classpath JARs"),
+                new HelpEntry("jbang -cp lib.jar jfr-doc",
+                    "Include classpath JARs that define custom JFR events"),
+                new HelpEntry("jbang --deps dev.tamboui:tamboui-core:0.3.0 jfr-doc --no-jdk",
+                    "Document JFR events from a Maven dependency"),
+                new HelpEntry("jfr-doc --generate-since 11,17,21,24,25",
+                    "Regenerate version history by scanning JDKs via jbang"),
+                new HelpEntry("jfr-doc --generate-since 11-25",
+                    "Same but with version range expansion")
+            );
+            return Map.of("Examples", examples);
+        }
+    }
 
     @Option(name = "format", shortName = 'f', description = "Output format: json, text, or html (inferred from --output extension, default: html)")
     String format;

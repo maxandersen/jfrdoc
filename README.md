@@ -8,31 +8,57 @@ Produces HTML, JSON, or plain text output with:
 - JDK version history — which version each event was introduced and optionally removed
 - HTML output includes searchable event cards, category/package/type indexes, and a version timeline
 
-## Usage
+## Install
 
 Requires [JBang](https://jbang.dev):
 
 ```bash
-# Generate HTML documentation (default)
-jbang jfrdoc.java
+# Run directly
+jbang jfrdoc@maxandersen
 
-# All JDK events to stdout as text
-jbang jfrdoc.java -f text -o -
+# Or install as a command
+jbang app install jfrdoc@maxandersen
+jfrdoc --help
+```
+
+## Usage
+
+```bash
+# Generate HTML documentation for all JDK events (default)
+jfrdoc
+
+# Plain text to stdout
+jfrdoc -f text -o -
 
 # JSON output
-jbang jfrdoc.java -o events.json
+jfrdoc -o events.json
 
 # Filter by event name (regex)
-jbang jfrdoc.java --name "GarbageCollection"
+jfrdoc --name "GarbageCollection"
 
 # Only non-JDK events (from classpath)
-jbang jfrdoc.java --no-jdk
-
-# Include classpath JARs that contain JFR events
-jbang -cp mylib.jar jfrdoc.java
+jfrdoc --no-jdk
 ```
 
 Output format is inferred from the `--output` file extension, or set explicitly with `--format`.
+
+## Documenting Library JFR Events
+
+Libraries that define custom JFR events can be documented by adding them to the classpath:
+
+```bash
+# Document JFR events from a Maven dependency
+jbang --deps dev.tamboui:tamboui-core:0.3.0 jfrdoc@maxandersen --no-jdk
+
+# Include a local JAR
+jbang -cp mylib.jar jfrdoc@maxandersen
+
+# Mix JDK and library events
+jbang --deps dev.tamboui:tamboui-core:0.3.0 jfrdoc@maxandersen
+
+# Multiple libraries
+jbang --deps dev.tamboui:tamboui-core:0.3.0,io.quarkus:quarkus-core:3.21.0 jfrdoc@maxandersen --no-jdk
+```
 
 ## Filters
 
@@ -58,13 +84,13 @@ To regenerate or extend the version data:
 
 ```bash
 # Regenerate for specific versions (downloads JDKs via jbang)
-jbang jfrdoc.java --generate-since 11,17,21,24,25
+jfrdoc --generate-since 11,17,21,24,25
 
 # Ranges are supported
-jbang jfrdoc.java --generate-since 11-25
+jfrdoc --generate-since 11-25
 
 # Custom output path
-jbang jfrdoc.java --generate-since 11,17,21,24,25 -o jfr-since.properties
+jfrdoc --generate-since 11,17,21,24,25 -o jfr-since.properties
 ```
 
 Use `--since <file>` to load a custom version history file.
@@ -78,19 +104,3 @@ Use `--since <file>` to load a custom version history file.
 | `text` | `jfrdoc.txt` | Plain text summary |
 
 Use `-o -` to write to stdout instead of a file.
-
-## Examples
-
-```bash
-# What GC events are available?
-jbang jfrdoc.java -f text -o - --category GC
-
-# Find events with a StackTrace field
-jbang jfrdoc.java -f text -o - --attribute-type StackTrace
-
-# Events added in JDK 21+ (filter on since data)
-jbang jfrdoc.java --name "Virtual|Continuation|Finalizer"
-
-# Full HTML docs for everything
-jbang jfrdoc.java
-```

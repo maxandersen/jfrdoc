@@ -1,0 +1,9 @@
+{
+  "catalogs": {},
+  "aliases": {
+    "jfrdoc": {
+      "script-ref": "jfrdoc.java",
+      "description": "Generate JFR event documentation (HTML/JSON/text)"
+    }
+  }
+}
