@@ -1,0 +1,49 @@
+name: Update JFR version history
+
+on:
+  workflow_dispatch:
+    inputs:
+      versions:
+        description: 'JDK versions to scan (e.g. 11,17,21,24,25 or 11-25)'
+        required: false
+        default: '11,17,21,22,23,24,25'
+
+jobs:
+  update-since:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: jbangdev/setup-jbang@main
+
+      - name: Generate jfr-since.properties
+        run: jbang jfrdoc.java --generate-since "${{ github.event.inputs.versions }}" -o jfr-since.properties
+
+      - name: Check for changes
+        id: diff
+        run: |
+          if git diff --quiet jfr-since.properties; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create PR
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          BRANCH="update-since-$(date +%Y%m%d)"
+          git checkout -b "$BRANCH"
+          git add jfr-since.properties
+          git commit -m "Update jfr-since.properties (scanned: ${{ github.event.inputs.versions }})"
+          git push origin "$BRANCH"
+          gh pr create --title "Update JFR version history" \
+            --body "Auto-generated from workflow. Scanned JDK versions: ${{ github.event.inputs.versions }}" \
+            --base main
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: No changes
+        if: steps.diff.outputs.changed == 'false'
+        run: echo "No changes to jfr-since.properties"
