@@ -8,6 +8,10 @@ on:
         required: false
         default: '11,17,21,22,23,24,25'
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   update-since:
     runs-on: ubuntu-latest
