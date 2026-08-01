@@ -13,19 +13,14 @@ Produces HTML, JSON, or plain text output with:
 Requires [JBang](https://jbang.dev):
 
 ```bash
-# Run directly
-jbang jfrdoc@maxandersen
-
-# Or install as a command
 jbang app install jfrdoc@maxandersen
-jfrdoc --help
 ```
 
 ## Usage
 
 ```bash
 # Generate HTML documentation for all JDK events (default)
-jfrdoc
+jfrdoc -f html
 
 # Plain text to stdout
 jfrdoc -f text -o -
@@ -35,16 +30,14 @@ jfrdoc -o events.json
 
 # Filter by event name (regex)
 jfrdoc --name "GarbageCollection"
-
-# Only non-JDK events (from classpath)
-jfrdoc --no-jdk
 ```
 
 Output format is inferred from the `--output` file extension, or set explicitly with `--format`.
 
 ## Documenting Library JFR Events
 
-Libraries that define custom JFR events can be documented by adding them to the classpath:
+Libraries that define custom JFR events can be documented by adding them to the classpath.
+When using `--deps` or `-cp`, use `jfrdoc@maxandersen` to reference the script:
 
 ```bash
 # Document JFR events from a Maven dependency
@@ -104,3 +97,7 @@ Use `--since <file>` to load a custom version history file.
 | `text` | `jfrdoc.txt` | Plain text summary |
 
 Use `-o -` to write to stdout instead of a file.
+
+## Live Docs
+
+JDK 25 JFR event documentation is published at [maxandersen.github.io/jfrdoc](https://maxandersen.github.io/jfrdoc/).
