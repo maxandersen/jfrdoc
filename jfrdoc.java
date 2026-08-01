@@ -24,7 +24,8 @@ import org.aesh.command.option.OptionList;
 import org.aesh.AeshRuntimeRunner;
 
 @CommandDefinition(name = "jfrdoc", description = "Generate JFR event documentation",
-        generateHelp = true, helpSectionProvider = jfrdoc.Examples.class)
+        generateHelp = true, helpSectionProvider = jfrdoc.Examples.class,
+        helpUrl = "https://maxandersen.github.io/jfrdoc")
 public class jfrdoc implements Command<CommandInvocation> {
 
     public static class Examples implements HelpSectionProvider {
